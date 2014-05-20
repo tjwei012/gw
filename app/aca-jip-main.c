@@ -105,6 +105,7 @@ static int8_t checkArrayentConnection(void) {
         return -1;
     }
 
+
     if(status.connected_to_server == 0) {
         return -1;
     }
