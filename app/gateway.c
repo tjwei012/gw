@@ -189,7 +189,8 @@ int AxLogin_JIP(struct in6_addr* addr, uint8_t type){
 			return ARRAYENT_FAILURE;
 		}
 
-		sprintf(child->device_code, "%s%02d", g_gateway.config.device_name, child->index);
+		sprintf(child->device_code, "%s", g_gateway.config.device_name);
+		sprintf(child->device_code + strlen(g_gateway.config.device_name) - 2, "%02d", child->index);
 		insertChild((const ST_CHILD**)&(g_gateway.firstChild), child);
 	}
 

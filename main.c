@@ -12,6 +12,7 @@ int main(void) {
 
 
 	initGateway();
+	JipInit();
 
 	while(1){
 		usleep(1);

@@ -32,6 +32,7 @@ struct gateway{
 };
 
 int initGateway(void);
+
 int AxLogin_JIP(struct in6_addr* addr, uint8_t type);
 int AxLogout_JIP(struct in6_addr* addr);
 int AxDelete_JIP(struct in6_addr* addr);
