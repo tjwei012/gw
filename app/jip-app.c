@@ -12,7 +12,7 @@
 #include <libtecla.h>
 #include "jip_cli.h"
 #include "gateway.h"
-
+#include "jia_app.h"
 #include <JIP.h>
 
 /** JIP context structure */
@@ -65,24 +65,33 @@ int AxMsg_JIP(struct in6_addr* addr,const char* cmd,const char* value)
 {
 	//int data = atoi(value);
 	char ipv6_addr[INET6_ADDRSTRLEN];
-	inet_ntop(AF_INET6, addr, ipv6_addr, INET6_ADDRSTRLEN);
-	printf("%s\n", ipv6_addr);
 
-	if(strcmp(cmd,"permitjion") == 0)
-	{
+	if(addr == NULL){
 
-	}
-	if(strcmp(cmd,"delete") == 0)
-	{
-		JipSet(ipv6_addr,"BulbControl","",value);
-	}
-	if(strcmp(cmd,"light") == 0)
-	{
-		JipSet(ipv6_addr,"BulbControl","Mode",value);
-	}
-	if(strcmp(cmd,"lum") == 0)
-	{
-		JipSet(ipv6_addr,"BulbControl","LumCurrent",value);
+		if(strcmp(cmd,"permitjion") == 0)
+		{
+			JipAccess();
+		}
+
+		if(strcmp(cmd,"deletedevice") == 0)
+		{
+			inet_ntop(AF_INET6, addr, ipv6_addr, INET6_ADDRSTRLEN);
+			printf("%s\n", ipv6_addr);
+			JipSet(ipv6_addr,"NodeControl","FactoryReset","1");
+		}
+	}else{
+		inet_ntop(AF_INET6, addr, ipv6_addr, INET6_ADDRSTRLEN);
+		printf("%s\n", ipv6_addr);
+
+		if(strcmp(cmd,"light") == 0)
+		{
+			JipSet(ipv6_addr,"BulbControl","Mode",value);
+		}
+
+		if(strcmp(cmd,"lum") == 0)
+		{
+			JipSet(ipv6_addr,"BulbControl","LumCurrent",value);
+		}
 	}
 }
 
@@ -106,7 +115,7 @@ int JipAccess()
 	while(getline(&line,&len,f) != -1)
 	{
 		i++;
-		printf("line %d :%s\n",i,line);
+//		printf("line %d :%s\n",i,line);
 		if(i > 5)
 		{
 			if((NULL != strstr(line,"Cleartext-Password"))||(NULL != strstr(line,"Vendor-Specific")))
