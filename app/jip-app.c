@@ -11,7 +11,7 @@
 #include <signal.h>
 #include <libtecla.h>
 #include "jip_cli.h"
-#include "sqlite3.h"
+#include "gateway.h"
 
 #include <JIP.h>
 
@@ -38,29 +38,98 @@ int iUse_TCP = 0; /* UDP by default */
 void CbJipNetworkChange(teJIP_NetworkChangeEvent eEvent, struct _tsNode *psNode)
 {
 	char str[32];
+	struct in6_addr* addr = &psNode->sNode_Address.sin6_addr;
 	switch(eEvent)
 	{
 	case E_JIP_NODE_JOIN:
 		sprintf(str,"join ");
+		AxLogin_JIP(addr,2);
 		break;
 	case E_JIP_NODE_LEAVE:
 		sprintf(str,"leave ");
+		AxLogout_JIP(addr);
 		break;
 	case E_JIP_NODE_MOVE:
 		sprintf(str,"move ");
+		AxDelete_JIP(addr);
 		break;
 	default:
 		break;
 	}
 	printf("xxxxxxxxxxxxxx node %s :ID %d\n",str,psNode->u32DeviceId);
-//	jip_print_node(psNode,0);
+
+}
+
+
+int AxMsg_JIP(struct in6_addr* addr,const char* cmd,const char* value)
+{
+	//int data = atoi(value);
+	char ipv6_addr[INET6_ADDRSTRLEN];
+	inet_ntop(AF_INET6, addr, ipv6_addr, INET6_ADDRSTRLEN);
+	printf("%s\n", ipv6_addr);
+
+	if(strcmp(cmd,"permitjion") == 0)
+	{
+
+	}
+	if(strcmp(cmd,"delete") == 0)
+	{
+		JipSet(ipv6_addr,"BulbControl","",value);
+	}
+	if(strcmp(cmd,"light") == 0)
+	{
+		JipSet(ipv6_addr,"BulbControl","Mode",value);
+	}
+	if(strcmp(cmd,"lum") == 0)
+	{
+		JipSet(ipv6_addr,"BulbControl","LumCurrent",value);
+	}
+}
+
+int JipAccess()
+{
+	FILE *f,*fb;
+	char *line = NULL;
+	size_t len = 0;
+	int i = 0;
+	f = fopen("/etc/freeradius2/users.6LoWPAN", "r");
+	if(f == NULL)
+	{
+		printf("open file error");
+	}
+	fb = fopen("/tmp/ax.tmp", "wt+");
+	if(fb == NULL)
+	{
+		printf("open file error");
+	}
+//	killall -HUP radiusd
+	while(getline(&line,&len,f) != -1)
+	{
+		i++;
+		printf("line %d :%s\n",i,line);
+		if(i > 5)
+		{
+			if((NULL != strstr(line,"Cleartext-Password"))||(NULL != strstr(line,"Vendor-Specific")))
+			{
+				if(*line == '#')
+					*line = ' ';
+			}
+		}
+		fwrite(line,strlen(line),1,fb);
+	}
+	if (line)
+		free(line);
+	fclose(f);
+	fclose(fb);
+	system("mv -f /tmp/ax.tmp /etc/freeradius2/users.6LoWPAN");
+	system("killall -HUP radiusd  >/dev/null 2>&1");
 
 }
 
 int JipInit()
 {
-	uint32_t u32NumAddresses;
-	tsJIPAddress *psAddresses;
+
+	JipAccess();
 
     if (eJIP_Init(&sJIP_Context, E_JIP_CONTEXT_CLIENT) != E_JIP_OK)
     {
@@ -78,14 +147,13 @@ int JipInit()
 }
 
 
-int JipSet(char *value)
+int JipSet(char *addr,char *mib,char *var,char *value)
 {
-	 jip_ipv6 ("fd04:bd3:80e8:3:215:8d00:4e:2062");
-	 jip_device ("0x08040001");
-	 jip_mib ("0xfffffe04");
-	 jip_var ("0");
-	 if(0 == jip_set (value))
-		 jip_discover(0);
+	 jip_ipv6 (addr);
+	 //jip_device ("0x08040001");
+	 jip_mib (mib);
+	 jip_var (var);
+	 jip_set (value);
 	 return 0;
 }
 

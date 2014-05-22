@@ -152,7 +152,6 @@ void* sendPropertyOfChild(void* arg){
 }
 
 int main(void) {
-
 #if 0
     arrayent_config_t arrayent_config;
     arrayent_config.product_id = ARR_PRODUCT_ID;
@@ -204,6 +203,7 @@ int main(void) {
    JipInit();
 
    while(1);
+
    /*receive property*/
 #if 0
    while(1){
@@ -218,6 +218,7 @@ int main(void) {
 
        if(len){
     	   printf("Received property \"%s\" from device %d.\n\r", buffer, userIndex);
+    	   if(strcmp(buffer,"") == 0)
     	   if(strcmp(buffer,"light 0") == 0)
 			   JipSet("0");
     	   if(strcmp(buffer,"light 1") == 0)
@@ -227,7 +228,7 @@ int main(void) {
        usleep(5);
 
    }
-
-	return EXIT_SUCCESS;
 #endif
+	return EXIT_SUCCESS;
+
 }
