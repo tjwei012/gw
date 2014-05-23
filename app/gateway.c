@@ -14,34 +14,37 @@
 #include "aca.h"
 #include "assert.h"
 
-//#define ARR_GATEWAY_NAME         "NXP000000"
-//#define ARR_GATEWAY_PASSWORD     "5D"
+#define ARR_GATEWAY_NAME         "NXP000000"
+#define ARR_GATEWAY_PASSWORD     "5D"
 
 #define ARR_DEVICE_PASSWORD     "XX"
 
 #define WORK_DIR ""
 #define CONFIG_FILE "gw_nxp.xml"
 
-///* Leave the Device Key as is unless instructed otherwise by Arrayent. */
-//#define ARR_GATEWAY_AES_KEY      "00345C4F6592FF6AF13DCC3841EBD52C"
-//
-///* The Product ID is one of Arrayent's mechanisms for identifying device traffic.
-// * Leave it as is unless instructed otherwise by Arrayent. */
-//#define ARR_PRODUCT_ID      1101
-//
-///* Leave the Product Key as is unless instructed otherwise by Arrayent. */
-//#define ARR_PRODUCT_AES_KEY      "7EFF77215F8BFB963AD45D571D2BF8BC"
-//
-///* The following are hostnames for Arrayent Cloud load balancers.
-// * Leave them as is unless instructed otherwise by Arrayent. */
-//#define ARR_LB_HOSTNAME_1 "axalent-dlb1.arrayent.com"
-//#define ARR_LB_HOSTNAME_2 "axalent-dlb2.arrayent.com"
-//#define ARR_LB_HOSTNAME_3 "axalent-dlb3.arrayent.com"
-//
-//#define ARR_LB_UDP_PORT 80
-//#define ARR_LB_TCP_PORT 80
-//
-//#define MAX_CHILD_NUM 16
+
+
+/* Leave the Device Key as is unless instructed otherwise by Arrayent. */
+#define ARR_GATEWAY_AES_KEY      "00345C4F6592FF6AF13DCC3841EBD52C"
+
+
+/* The Product ID is one of Arrayent's mechanisms for identifying device traffic.
+ * Leave it as is unless instructed otherwise by Arrayent. */
+#define ARR_PRODUCT_ID      1101
+
+/* Leave the Product Key as is unless instructed otherwise by Arrayent. */
+#define ARR_PRODUCT_AES_KEY      "7EFF77215F8BFB963AD45D571D2BF8BC"
+
+/* The following are hostnames for Arrayent Cloud load balancers.
+ * Leave them as is unless instructed otherwise by Arrayent. */
+#define ARR_LB_HOSTNAME_1 "axalent-dlb1.arrayent.com"
+#define ARR_LB_HOSTNAME_2 "axalent-dlb2.arrayent.com"
+#define ARR_LB_HOSTNAME_3 "axalent-dlb3.arrayent.com"
+
+#define ARR_LB_UDP_PORT 80
+#define ARR_LB_TCP_PORT 80
+
+#define MAX_CHILD_NUM 16
 
 struct gateway g_gateway;
 
@@ -134,6 +137,19 @@ void* readProperty(void* arg) {
 }
 
 int initGateway() {
+
+
+//	g_gateway.config.product_id = ARR_PRODUCT_ID;
+//	g_gateway.config.product_aes_key = ARR_PRODUCT_AES_KEY;
+//	g_gateway.config.load_balancer_domain_names[0] = ARR_LB_HOSTNAME_1;
+//	g_gateway.config.load_balancer_domain_names[1] = ARR_LB_HOSTNAME_2;
+//	g_gateway.config.load_balancer_domain_names[2] = ARR_LB_HOSTNAME_3;
+//	g_gateway.config.load_balancer_udp_port = ARR_LB_UDP_PORT;
+//	g_gateway.config.load_balancer_tcp_port = ARR_LB_TCP_PORT;
+//	g_gateway.config.device_name = ARR_GATEWAY_NAME;
+//	g_gateway.config.device_password = ARR_GATEWAY_PASSWORD;
+//	g_gateway.config.device_aes_key = ARR_GATEWAY_AES_KEY;
+//	g_gateway.maxChildNum = MAX_CHILD_NUM;
 
 	if(loadGateway()!=ARRAYENT_SUCCESS){
 		return ARRAYENT_FAILURE;
@@ -372,7 +388,6 @@ static int saveGateway(){
 
 	sprintf(tmp, "%d", g_gateway.maxChildNum);
 	xmlNewProp(root_node, BAD_CAST "maxChildNum", BAD_CAST tmp);
-
 	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST "1");
 
 	//create a new node, fill the content and add it to root node.
@@ -401,7 +416,7 @@ static int saveGateway(){
 	BAD_CAST g_gateway.config.device_name);
 	xmlNewProp(configNode, BAD_CAST "code_suffix",
 	BAD_CAST g_gateway.config.device_password);
-	xmlNewProp(configNode, BAD_CAST "devic_aes",
+	xmlNewProp(configNode, BAD_CAST "device_aes",
 	BAD_CAST g_gateway.config.device_aes_key);
 
 	sprintf(tmp, "%d", g_gateway.config.device_can_multi_attribute);
@@ -429,7 +444,8 @@ static int saveGateway(){
 	}
 
 	//save xml file
-	int nRel = xmlSaveFile(CONFIG_FILE, doc);
+	//int nRel = xmlSaveFile(CONFIG_FILE, doc);
+	int nRel = xmlSaveFormatFileEnc(CONFIG_FILE, doc, "UTF-8", 1);
 	if (nRel != -1) {
 		//release the doc.
 		xmlFreeDoc(doc);
@@ -448,7 +464,7 @@ static int loadGateway() {
 
 	// open xml Doc
 	//xmlKeepBlanksDefault(0);
-	pdoc = xmlReadFile(CONFIG_FILE, "UTF-8", XML_PARSE_RECOVER);
+	pdoc = xmlReadFile(CONFIG_FILE, "UTF-8", 256);
 
 	if (pdoc == NULL) {
 		printf("open file %s error!\n", CONFIG_FILE);
@@ -463,6 +479,7 @@ static int loadGateway() {
 		return ARRAYENT_FAILURE;
 	}
 
+	printf("proot name: %s\n", proot->name);
 	/* find the root : gateway*/
 	if (xmlStrcmp(proot->name, BAD_CAST "gateway") != 0) {
 		printf("error: %s format error）！\n", CONFIG_FILE);
@@ -471,12 +488,18 @@ static int loadGateway() {
 
 	/* read version info */
 	if (xmlHasProp(proot, BAD_CAST "version")) {
+		printf("version: %s\n", xmlGetProp(proot, BAD_CAST "version"));
+	}
+
+	/* read version info */
+	if (xmlHasProp(proot, BAD_CAST "maxChildNum")) {
+		szAttr = xmlGetProp(proot, BAD_CAST "maxChildNum");
+		g_gateway.maxChildNum = atoi((char*) szAttr);
 
 	}
 
-	curNode = proot->xmlChildrenNode;
+	curNode = proot->children;
 
-	printf("curNode name:%s\n", curNode->name);
 	if (0 == strcmp((char*)curNode->name, "config")) {
 
 		if (xmlHasProp(curNode, BAD_CAST "dlb1")) {
@@ -528,9 +551,9 @@ static int loadGateway() {
 		}
 
 		if (xmlHasProp(curNode, BAD_CAST "productid")) {
-			szAttr = xmlGetProp(curNode, BAD_CAST "tcp_port");
+			szAttr = xmlGetProp(curNode, BAD_CAST "productid");
 			g_gateway.config.product_id = atoi((char*)szAttr);
-			printf("udp=%d\n", g_gateway.config.product_id);
+			printf("productid=%d\n", g_gateway.config.product_id);
 		}
 
 		if (xmlHasProp(curNode, BAD_CAST "product_aes")) {
@@ -566,8 +589,8 @@ static int loadGateway() {
 			printf("devicepwd=%s\n", g_gateway.config.device_password);
 		}
 
-		if (xmlHasProp(curNode, BAD_CAST "devic_aes")) {
-			szAttr = xmlGetProp(curNode, BAD_CAST "devic_aes");
+		if (xmlHasProp(curNode, BAD_CAST "device_aes")) {
+			szAttr = xmlGetProp(curNode, BAD_CAST "device_aes");
 			pTmp = (char*) malloc(1 + strlen((char*) szAttr));
 
 			assert(pTmp);
