@@ -11,7 +11,7 @@
 int main(void) {
 
 
-	initGateway();
+//	initGateway();
 	JipInit();
 
 	while(1){
