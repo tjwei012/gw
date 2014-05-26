@@ -115,6 +115,7 @@ void* readProperty(void* arg) {
 					int childIndex = atoi(value);
 					child = findChildByIndex(childIndex, g_gateway.firstChild);
 					if (child) {
+						printf("delete %d %s %svalue \n", &(child->addr), cmd, value);
 						AxMsg_JIP(&(child->addr), cmd, value);
 					}
 				}
@@ -321,6 +322,8 @@ static void insertChild(const ST_CHILD** firstChild, ST_CHILD* child) {
 
 		}
 
+		prev = prev->pNext;
+
 	}
 
 	child->pNext = prev->pNext;
@@ -366,15 +369,17 @@ static void refreshChidlInfo() {
 
 			buffer[2 * (child->index - 1)] = '8';
 			buffer[2 * (child->index - 1) + 1] = '2';
-			printf("child index =%d", child->index);
+			printf("child index =%d\n", child->index);
 		}
 		child = child->pNext;
 	}
 
-	printf("2 buffer %s\n", buffer);
+	printf(" buffer %s\n", buffer);
 	ArrayentSetProperty("childInfo", buffer);
 
 	saveGateway();
+
+
 }
 
 static int saveGateway(){
@@ -433,13 +438,16 @@ static int saveGateway(){
 		xmlAddChild(node, childNode);
 
 		sprintf(tmp, "%d", child->index);
-		xmlNewProp(configNode, BAD_CAST "index", BAD_CAST tmp);
+		xmlNewProp(childNode, BAD_CAST "index", BAD_CAST tmp);
 
 		inet_ntop(AF_INET6, &(child->addr), tmp, INET6_ADDRSTRLEN);
-		xmlNewProp(configNode, BAD_CAST "addr", BAD_CAST tmp);
+		printf("addr %s", tmp);
+		xmlNewProp(childNode, BAD_CAST "addr", BAD_CAST tmp);
 
 		sprintf(tmp, "%d", child->type);
-		xmlNewProp(configNode, BAD_CAST "type", BAD_CAST tmp);
+		xmlNewProp(childNode, BAD_CAST "type", BAD_CAST tmp);
+
+		child = child->pNext;
 
 	}
 
@@ -618,22 +626,24 @@ static int loadGateway() {
 			assert(child);
 
 			if (xmlHasProp(childNode, BAD_CAST "index")) {
-				szAttr = xmlGetProp(child, BAD_CAST "index");
+				szAttr = xmlGetProp(childNode, BAD_CAST "index");
 				child->index = atoi((char*)szAttr);
 			}
 
 			if (xmlHasProp(childNode, BAD_CAST "addr")) {
-				szAttr = xmlGetProp(child, BAD_CAST "index");
+				szAttr = xmlGetProp(childNode, BAD_CAST "addr");
 				inet_pton(AF_INET6, (const char*)szAttr, &(child->addr));
 			}
 
 			if (xmlHasProp(childNode, BAD_CAST "type")) {
-				szAttr = xmlGetProp(child, BAD_CAST "type");
+				szAttr = xmlGetProp(childNode, BAD_CAST "type");
 				child->type = atoi((char*)szAttr);
 			}
 
 			fillDeviceCode(child);
 			insertChild((const ST_CHILD**)&(g_gateway.firstChild),child);
+
+			childNode = childNode->next;
 		}
 	}
 
