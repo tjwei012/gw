@@ -21,6 +21,7 @@
 
 #define WORK_DIR ""
 #define CONFIG_FILE "gw_nxp.xml"
+#define TMP_FILE "tmp"
 
 
 
@@ -67,7 +68,7 @@ static int8_t checkArrayentConnection(void) {
 		return -1;
 	}
 
-	if (status.connected_to_server == 0) {
+	if (status.connected_to_server == 0 || status.isBusy != 0) {
 		return -1;
 	}
 
@@ -225,7 +226,6 @@ int AxLogin_JIP(struct in6_addr* addr, uint8_t type) {
 
 		fillDeviceCode(child);
 		insertChild((const ST_CHILD**) &(g_gateway.firstChild), child);
-		printcList();
 	}
 
 	child->itemStatus = CHILD_ITEM_ONLINE;
@@ -249,6 +249,18 @@ int AxLogout_JIP(struct in6_addr* addr) {
 	return ArrayentChildLogout(child->index);
 }
 
+int AxSetProperty(struct in6_addr* addr, char* property, char* value){
+
+	ST_CHILD* child = findChildByAddr(addr, g_gateway.firstChild);
+
+	if (!child) {
+		return ARRAYENT_FAILURE;
+	}
+
+
+	return ArrayentSetChildProperty(child->index, property);
+}
+
 int AxDelete_JIP(struct in6_addr* addr) {
 	ST_CHILD* child = findChildByAddr(addr, g_gateway.firstChild);
 
@@ -258,12 +270,12 @@ int AxDelete_JIP(struct in6_addr* addr) {
 
 	child->itemStatus = CHILD_ITEM_NONE;
 
-	printf("before ArrayentChildLogout\n");
+//	printf("before ArrayentChildLogout\n");
 	ArrayentChildLogout(child->index);
 
-	printf("before delete\n");
+//	printf("before delete\n");
 	deleteChild(&(g_gateway.firstChild), child);
-	printf("after delete\n");
+//	printf("after delete\n");
 //	printcList();
 
 	free((void*) child);
@@ -425,12 +437,12 @@ static void refreshChildInfo() {
 	}
 
 	printf(" buffer %s\n", buffer);
-//	int i = 0;
-//	while(i < 3){
-//		sleep(1);
-		ArrayentSetProperty("childInfo", buffer);
-//		i++;
-//	}
+
+	int i = 0;
+	while(checkArrayentConnection() != 0 && i++ < 10){
+		sleep(1);
+	}
+	ArrayentSetProperty("childInfo", buffer);
 
 	saveGateway();
 }
@@ -494,7 +506,7 @@ static int saveGateway(){
 		xmlNewProp(childNode, BAD_CAST "index", BAD_CAST tmp);
 
 		inet_ntop(AF_INET6, &(child->addr), tmp, INET6_ADDRSTRLEN);
-		printf("add addr: %s\n", tmp);
+//		printf("add addr: %s\n", tmp);
 		xmlNewProp(childNode, BAD_CAST "addr", BAD_CAST tmp);
 
 		sprintf(tmp, "%d", child->type);
@@ -506,10 +518,14 @@ static int saveGateway(){
 
 	//save xml file
 	//int nRel = xmlSaveFile(CONFIG_FILE, doc);
-	int nRel = xmlSaveFormatFileEnc(CONFIG_FILE, doc, "UTF-8", 1);
+	int nRel = xmlSaveFormatFileEnc(TMP_FILE, doc, "UTF-8", 1);
 	if (nRel != -1) {
 		//release the doc.
 		xmlFreeDoc(doc);
+		sprintf(tmp, "cp %s %s", TMP_FILE, CONFIG_FILE);
+		printf("cmp = %s\n", tmp);
+		system(tmp);
+
 		return ARRAYENT_SUCCESS;
 	}
 
@@ -700,7 +716,6 @@ static int loadGateway() {
 		}
 	}
 
-	printcList();
 	/* close clean */
 	xmlFreeDoc(pdoc);
 	xmlCleanupParser();
