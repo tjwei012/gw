@@ -54,10 +54,10 @@ static ST_CHILD* findChildByIndex(uint8_t index, const ST_CHILD* firstChild);
 static uint8_t allocIndex(const ST_CHILD* firstChild, const uint16_t maxChild);
 static void deleteChild(ST_CHILD** firstChild, ST_CHILD* child);
 static void insertChild(const ST_CHILD** firstChild, ST_CHILD* child);
-static void refreshChidlInfo(void);
+static void refreshChildInfo(void);
 static int saveGateway(void);
 static int loadGateway(void);
-
+void printcList(void);
 // Check to see if Arrayent has a connection to the cloud */
 static int8_t checkArrayentConnection(void) {
 	arrayent_net_status_t status;
@@ -96,8 +96,10 @@ void* readProperty(void* arg) {
 		}
 
 		if (len) {
-			printf("Received property \"%s\" from device %d.\n\r", buffer,
+			printf("Received property \"%s\" from device %d.\r\n", buffer,
 					userIndex);
+
+			printcList();
 
 			if (userIndex == 0) {
 
@@ -125,14 +127,18 @@ void* readProperty(void* arg) {
 				value = strtok(NULL, split);
 				child = findChildByIndex(userIndex, g_gateway.firstChild);
 
+
 				if (child) {
 					AxMsg_JIP(&(child->addr), cmd, value);
+				}
+				else{
+					printf("no child index: %d\n", userIndex);
 				}
 			}
 
 		}
 
-		usleep(5);
+//		usleep(5);
 
 	}
 }
@@ -181,7 +187,7 @@ int initGateway() {
 
 	sleep(2);
 
-	refreshChidlInfo();
+	refreshChildInfo();
 
 	pthread_t thread;
 	pthread_create(&thread, NULL, readProperty, NULL);
@@ -217,11 +223,12 @@ int AxLogin_JIP(struct in6_addr* addr, uint8_t type) {
 
 		fillDeviceCode(child);
 		insertChild((const ST_CHILD**) &(g_gateway.firstChild), child);
+		printcList();
 	}
 
 	child->itemStatus = CHILD_ITEM_ONLINE;
 
-	refreshChidlInfo();
+	refreshChildInfo();
 
 	return ArrayentChildLogin(child->index, child->device_code,
 	ARR_DEVICE_PASSWORD);
@@ -249,13 +256,17 @@ int AxDelete_JIP(struct in6_addr* addr) {
 
 	child->itemStatus = CHILD_ITEM_NONE;
 
+	printf("before ArrayentChildLogout\n");
 	ArrayentChildLogout(child->index);
 
+	printf("before delete\n");
 	deleteChild(&(g_gateway.firstChild), child);
+	printf("after delete\n");
+//	printcList();
 
 	free((void*) child);
 
-	refreshChidlInfo();
+	refreshChildInfo();
 
 	return ARRAYENT_SUCCESS;
 }
@@ -283,9 +294,11 @@ static ST_CHILD* findChildByIndex(uint8_t index, const ST_CHILD* firstChild) {
 			break;
 		}
 
+		printf("find child By index: %d\n", result->index);
 		result = (ST_CHILD*) result->pNext;
 	}
 
+	printf("find child By index result: %d\n", result);
 	return result;
 }
 
@@ -304,6 +317,12 @@ static uint8_t allocIndex(const ST_CHILD* firstChild, const uint16_t maxChild) {
 
 static void insertChild(const ST_CHILD** firstChild, ST_CHILD* child) {
 	ST_CHILD *prev;
+
+	printf("insert child\n");
+	if(child == NULL){
+		printf("insertChild: child NULL pointer\n");
+		return;
+	}
 
 	if (*firstChild == NULL) {
 		*firstChild = child;
@@ -326,6 +345,10 @@ static void insertChild(const ST_CHILD** firstChild, ST_CHILD* child) {
 
 	}
 
+	if(prev == NULL){
+		printf("insertChild: prev NULL pointer\n");
+		return;
+	}
 	child->pNext = prev->pNext;
 	prev->pNext = child;
 }
@@ -334,32 +357,57 @@ static void deleteChild(ST_CHILD** firstChild, ST_CHILD* child) {
 
 	ST_CHILD *prev;
 
+	printf("delete child: firstchild %x, child %x", firstChild, child);
 	if (*firstChild == NULL) {
 		return;
 	}
 
 	if ((*firstChild)->index == child->index) {
-		*firstChild = NULL;
+		*firstChild = (*firstChild)->pNext;
 		return;
 	}
 
 	prev = (ST_CHILD *) *firstChild;
 
 	while (prev->pNext) {
+
 		if (prev->pNext->index == child->index) {
 			prev->pNext = prev->pNext->pNext;
+			break;
 		}
+
+		prev = prev->pNext;
 	}
 }
 
-static void refreshChidlInfo() {
+void printcList(void){
+	ST_CHILD *child;
+	char tmp[100];
+	child = g_gateway.firstChild;
+    printf("print childlist: \n");
+
+	while(child){
+
+		inet_ntop(AF_INET6, &(child->addr), tmp, INET6_ADDRSTRLEN);
+			//		printf("addr %s", tmp);
+		printf("child index = %d , child addr = %s\n", child->index, tmp);
+
+		child = child->pNext;
+	}
+
+}
+
+static void refreshChildInfo() {
 	char* buffer;
+	printf("%s\n", __FUNCTION__);
 	ST_CHILD* child = g_gateway.firstChild;
 
 	buffer = malloc(g_gateway.maxChildNum * 2 + 1);
 
-	if (!buffer)
+	if (!buffer){
+		printf("error: cannot malloc buffer!\n");
 		return;
+	}
 
 	memset(buffer, '0', g_gateway.maxChildNum * 2);
 	buffer[g_gateway.maxChildNum * 2] = 0;
@@ -375,11 +423,14 @@ static void refreshChidlInfo() {
 	}
 
 	printf(" buffer %s\n", buffer);
-	ArrayentSetProperty("childInfo", buffer);
+//	int i = 0;
+//	while(i < 3){
+//		sleep(1);
+		ArrayentSetProperty("childInfo", buffer);
+//		i++;
+//	}
 
 	saveGateway();
-
-
 }
 
 static int saveGateway(){
@@ -441,7 +492,7 @@ static int saveGateway(){
 		xmlNewProp(childNode, BAD_CAST "index", BAD_CAST tmp);
 
 		inet_ntop(AF_INET6, &(child->addr), tmp, INET6_ADDRSTRLEN);
-		printf("addr %s", tmp);
+		printf("add addr: %s\n", tmp);
 		xmlNewProp(childNode, BAD_CAST "addr", BAD_CAST tmp);
 
 		sprintf(tmp, "%d", child->type);
@@ -647,6 +698,7 @@ static int loadGateway() {
 		}
 	}
 
+	printcList();
 	/* close clean */
 	xmlFreeDoc(pdoc);
 	xmlCleanupParser();

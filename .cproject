@@ -28,6 +28,7 @@
 								<option id="gnu.c.compiler.option.debugging.level.2116877426" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.985542360" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libaca}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/app}&quot;"/>
 									<listOptionValue builtIn="false" value="/opt/nxp_toolchain/target-arm_uClibc-0.9.33.2_eabi/usr/include"/>
 									<listOptionValue builtIn="false" value="/opt/nxp_toolchain/target-arm_uClibc-0.9.33.2_eabi/usr/include/libxml2"/>
 								</option>

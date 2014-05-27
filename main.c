@@ -12,7 +12,7 @@ int main(void) {
 
 
 	initGateway();
-	printf("hello");
+//	printf("hello");
 	JipInit();
 
 	while(1){
