@@ -34,16 +34,16 @@ void CbJipNetworkChange(teJIP_NetworkChangeEvent eEvent, struct _tsNode *psNode)
 	struct in6_addr* addr = &psNode->sNode_Address.sin6_addr;
 	inet_ntop(AF_INET6, addr, ipv6_addr, INET6_ADDRSTRLEN);
 //	uint64_t u64MAC_Address;
-//	unsigned char mac[13];
+	unsigned char mac[13];
 //	memcpy(&u64MAC_Address,&addr->s6_addr[8],sizeof(uint64_t));
 //	u64MAC_Address = be64toh(u64MAC_Address);
-//	sprintf(mac,"%02X%02X%02X%02X%02X%02X",
-//			addr->s6_addr[10],
-//			addr->s6_addr[11],
-//			addr->s6_addr[12],
-//			addr->s6_addr[13],
-//			addr->s6_addr[14],
-//			addr->s6_addr[15]);
+	sprintf(mac,"%02X%02X%02X%02X%02X%02X",
+			addr->s6_addr[10],
+			addr->s6_addr[11],
+			addr->s6_addr[12],
+			addr->s6_addr[13],
+			addr->s6_addr[14],
+			addr->s6_addr[15]);
 	switch(eEvent)
 	{
 	case E_JIP_NODE_JOIN:
@@ -61,9 +61,8 @@ void CbJipNetworkChange(teJIP_NetworkChangeEvent eEvent, struct _tsNode *psNode)
 	default:
 		break;
 	}
-	printf("/***********************************\n");
-	printf("node %s! IP: %s\n",str,ipv6_addr);
-	printf("************************************/\n");
+
+	printf("xxxxxxxxxxxxxx node %s! IP:%s MAC:%s \n",str,ipv6_addr,mac);
 
 }
 
