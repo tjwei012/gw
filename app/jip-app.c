@@ -103,11 +103,11 @@ int AxMsg_JIP(struct in6_addr* addr,const char* cmd,const char* value)
 		{
 
 			printf("11\n");
-			JipAccessRemove(addr);
-			printf("22\n");
 			JipSet(ipv6_addr,"NodeControl","FactoryReset","1");
-			printf("33\n");
 			JipNodeRemove(&sJIP_Context,addr);
+			printf("22\n");
+			JipAccessRemove(addr);
+			printf("33\n");
 		}
 	}
 	return 0;
@@ -137,7 +137,7 @@ int JipAccessAdd()
 	while(getline(&line,&len,f) != -1)
 	{
 		i++;
-//		printf("line %d :%s\n",i,line);
+		printf("line %d :%s\n",i,line);
 		pTmp = line;
 		if(i > 5)
 		{
@@ -160,13 +160,15 @@ int JipAccessAdd()
 
 	fclose(f);
 	fclose(fb);
-//	system("/etc/init.d/radiusd disable");
-//	system("/etc/init.d/radiusd stop");
-//	system("cp -f /tmp/ax.tmp /etc/freeradius2/users.6LoWPAN");
-//	system("/etc/init.d/radiusd start");
-//	system("/etc/init.d/radiusd enable");
+	system("/etc/init.d/radiusd disable");
+	system("/etc/init.d/radiusd stop");
+	system("cp -f /tmp/ax.tmp /etc/freeradius2/users.6LoWPAN");
+	system("/etc/init.d/radiusd start");
+	system("/etc/init.d/radiusd enable");
 
 	printf("addss\n");
+	JipReset();
+	printf("reset success\n");
 	return 0;
 }
 
@@ -205,7 +207,7 @@ int JipAccessRemove(struct in6_addr* addr)
 	while(getline(&line,&len,f) != -1)
 	{
 		i++;
-//		printf("line %d :%s\n",i,line);
+		printf("line %d :%s\n",i,line);
 		if(i > 5)
 		{
 			if((NULL != strstr(line,"Cleartext-Password"))||(NULL != strstr(line,"Vendor-Specific")))
@@ -236,6 +238,8 @@ int JipAccessRemove(struct in6_addr* addr)
 	system("/etc/init.d/radiusd start");
 	system("/etc/init.d/radiusd enable");
 
+	JipReset();
+	printf("reset success\n");
 	return 0;
 }
 
@@ -312,6 +316,33 @@ int JipInit()
 //
 //    pthread_t thread_access;
 //    pthread_create(&thread_access, NULL,JipAccessWhitelist, NULL);
+
+    eJIPService_MonitorNetwork(&sJIP_Context,CbJipNetworkChange);
+    return 0;
+}
+
+int JipReset()
+{
+
+	eJIPService_MonitorNetworkStop(&sJIP_Context);
+
+	if(eJIP_Destroy(&sJIP_Context) != E_JIP_OK){
+		printf("JIP destroy failed\n\r");
+		return -1;
+	}
+
+
+    if (eJIP_Init(&sJIP_Context, E_JIP_CONTEXT_CLIENT) != E_JIP_OK)
+    {
+        printf("JIP startup failed\n\r");
+        return -1;
+    }
+
+    if (eJIP_Connect4(&sJIP_Context, pcGatewayIPv4Address, pcBorderRouterIPv6Address, iPort, iUse_TCP) != E_JIP_OK)
+	{
+		printf("JIP connect failed\n\r");
+		return -1;
+	}
 
     eJIPService_MonitorNetwork(&sJIP_Context,CbJipNetworkChange);
     return 0;
