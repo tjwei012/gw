@@ -117,8 +117,10 @@ void* readProperty(void* arg) {
 					int childIndex = atoi(value);
 					child = findChildByIndex(childIndex, g_gateway.firstChild);
 					if (child) {
-						printf("delete %d %s %svalue \n", &(child->addr), cmd, value);
-						AxMsg_JIP(&(child->addr), cmd, value);
+						printf("delete %d %s %s value \n", &(child->addr), cmd, value);
+						if(ARRAYENT_SUCCESS == AxMsg_JIP(&(child->addr), cmd, value)){
+							AxDelete_JIP(&(child->addr));
+						}
 					}
 				}
 
