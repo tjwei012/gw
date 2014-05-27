@@ -159,6 +159,7 @@ typedef struct {
     uint8_t using_tcp:1;            ///< Connection to Arrayent server is over TCP
     uint8_t connected_to_server:1;  ///< Connection to Arrayent server is okay
     uint16_t padding:11;
+    uint8_t isBusy:1;
 } arrayent_net_status_t;
 
 /** @brief Arrayent timestamp data type (output of @c ArrayentGetTime())
