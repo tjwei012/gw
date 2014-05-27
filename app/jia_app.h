@@ -42,4 +42,5 @@ int JipAccessAdd();
 int JipAccessRemove(struct in6_addr* addr);
 int JipAccessCmp();
 teJIP_Status JipNodeRemove(tsJIP_Context *psJIP_Context,  struct in6_addr* addr);
+teJIP_Status JipNodeTrap(tsJIP_Context *psJIP_Context, tsNode *psNode);
 #endif /* JIA_APP_H_ */

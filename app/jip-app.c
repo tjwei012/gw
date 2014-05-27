@@ -48,6 +48,7 @@ void CbJipNetworkChange(teJIP_NetworkChangeEvent eEvent, struct _tsNode *psNode)
 	{
 	case E_JIP_NODE_JOIN:
 		sprintf(str,"join");
+		JipNodeTrap(&sJIP_Context,psNode);
 		AxLogin_JIP(addr,2);
 		break;
 	case E_JIP_NODE_LEAVE:
@@ -364,7 +365,6 @@ int JipSet(char *addr,char *mib,char *var,char *value)
 
 //teJIP_Status JipNodeRemove(tsJIP_Context *psJIP_Context,  struct in6_addr* addr)
 //{
-//
 //	tsNode *psNode = NULL;
 //	tsNetwork *psNet = &psJIP_Context->sNetwork;
 //	tsJIPAddress   sAddress;
@@ -401,6 +401,37 @@ int JipSet(char *addr,char *mib,char *var,char *value)
 // //   return eJIP_NetFreeNode(psJIP_Context, psNode);
 //}
 
+static void cbBulbModeTrap(tsVar *psModeVar)
+{
+	printf("Mode Changed!\n");
 
+}
 
+teJIP_Status JipNodeTrap(tsJIP_Context *psJIP_Context, tsNode *psNode)
+{
+    tsMib *psMib = NULL;
+    tsVar *psVar = NULL;
+    const uint8_t u8TreeVersionTrapHandle = 0x12;
+    psNode = psJIP_LookupNode(psJIP_Context,psNode);
+    if (psNode)
+    {
+        psMib = psJIP_LookupMib(psNode, NULL, "BulbControl");
+
+        if (psMib)
+        {
+            psVar = psJIP_LookupVar(psMib, NULL, "Mode");
+
+            if (psVar)
+            {
+                if (eJIP_TrapVar(psJIP_Context, psVar, u8TreeVersionTrapHandle, cbBulbModeTrap) == E_JIP_OK)
+                {
+                    DBG_Printf(DBG_JIP, "Trap registered\n");
+
+                }
+            }
+        }
+        eJIP_UnlockNode(psNode);
+    }
+
+}
 
