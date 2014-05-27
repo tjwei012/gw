@@ -66,7 +66,6 @@ void CbJipNetworkChange(teJIP_NetworkChangeEvent eEvent, struct _tsNode *psNode)
 
 }
 
-
 int AxMsg_JIP(struct in6_addr* addr,const char* cmd,const char* value)
 {
 	//int data = atoi(value);
@@ -80,6 +79,7 @@ int AxMsg_JIP(struct in6_addr* addr,const char* cmd,const char* value)
 		{
 			printf("add\n");
 			JipAccessAdd();
+			JipReset();
 //			JipAddFlag = 1;
 		}
 
@@ -103,13 +103,14 @@ int AxMsg_JIP(struct in6_addr* addr,const char* cmd,const char* value)
 
 			printf("11\n");
 			JipSet(ipv6_addr,"NodeControl","FactoryReset","1");
-			JipNodeRemove(&sJIP_Context,addr);
+			JipReset();
 			printf("22\n");
 			JipAccessRemove(addr);
 			printf("33\n");
+			return ARRAYENT_SUCCESS;
 		}
 	}
-	return 0;
+	return  ARRAYENT_FAILURE;
 }
 
 int JipAccessAdd()
@@ -136,7 +137,7 @@ int JipAccessAdd()
 	while(getline(&line,&len,f) != -1)
 	{
 		i++;
-		printf("line %d :%s\n",i,line);
+//		printf("line %d :%s\n",i,line);
 		pTmp = line;
 		if(i > 5)
 		{
@@ -165,9 +166,6 @@ int JipAccessAdd()
 	system("/etc/init.d/radiusd start");
 	system("/etc/init.d/radiusd enable");
 
-	printf("addss\n");
-	JipReset();
-	printf("reset success\n");
 	return 0;
 }
 
@@ -206,7 +204,7 @@ int JipAccessRemove(struct in6_addr* addr)
 	while(getline(&line,&len,f) != -1)
 	{
 		i++;
-		printf("line %d :%s\n",i,line);
+//		printf("line %d :%s\n",i,line);
 		if(i > 5)
 		{
 			if((NULL != strstr(line,"Cleartext-Password"))||(NULL != strstr(line,"Vendor-Specific")))
@@ -237,8 +235,6 @@ int JipAccessRemove(struct in6_addr* addr)
 	system("/etc/init.d/radiusd start");
 	system("/etc/init.d/radiusd enable");
 
-	JipReset();
-	printf("reset success\n");
 	return 0;
 }
 
@@ -322,6 +318,7 @@ int JipInit()
 
 int JipReset()
 {
+	printf("JipReset\n");
 
 	eJIPService_MonitorNetworkStop(&sJIP_Context);
 
@@ -343,7 +340,14 @@ int JipReset()
 		return -1;
 	}
 
-    eJIPService_MonitorNetwork(&sJIP_Context,CbJipNetworkChange);
+    eJIPService_DiscoverNetwork(&sJIP_Context);
+
+    if (eJIPService_MonitorNetwork(&sJIP_Context,CbJipNetworkChange) != E_JIP_OK)
+	{
+		printf("JIP eJIPService_MonitorNetwork failed\n\r");
+		return -1;
+	}
+
     return 0;
 }
 
@@ -358,44 +362,44 @@ int JipSet(char *addr,char *mib,char *var,char *value)
 }
 
 
-teJIP_Status JipNodeRemove(tsJIP_Context *psJIP_Context,  struct in6_addr* addr)
-{
-
-	tsNode *psNode = NULL;
-	tsNetwork *psNet = &psJIP_Context->sNetwork;
-	tsJIPAddress   sAddress;
-	//teJIP_Status eStatus = E_JIP_ERROR_FAILED;
-
-	memset (&sAddress, 0, sizeof(struct sockaddr_in6));
-	sAddress.sin6_family  = AF_INET6;
-	sAddress.sin6_port    = htons(JIP_DEFAULT_PORT);
-	memcpy(&sAddress.sin6_addr.s6_addr[0],addr,sizeof(struct in6_addr));
-
-	psNode = psJIP_LookupNode(psJIP_Context,&sAddress);
-	if (psNode)
-	{
-//		/* Got pointer to the node, lock the linked list now so that we can remove it. */
-//		eJIP_Lock(psJIP_Context);
-//		(void)psJIP_NodeListRemove(&psJIP_Context->sNetwork.psNodes, psNode);
+//teJIP_Status JipNodeRemove(tsJIP_Context *psJIP_Context,  struct in6_addr* addr)
+//{
 //
-//		/* Decrement count of nodes */
-//		psNet->u32NumNodes--;
-//		//eStatus = E_JIP_OK;
-//		eJIP_Unlock(psJIP_Context);
-	}
-	else
-	{
-		DBG_Printf(DBG_JIP, "Failed to remove node\n");
-		return E_JIP_ERROR_FAILED;
-	}
-
-	/* Node found to remove from the network */
-	DBG_Printf_IPv6Address(DBG_JIP, psNode->sNode_Address.sin6_addr);
-	CbJipNetworkChange(E_JIP_NODE_MOVE,psNode);
-
-    /* Now we can free the node */
- //   return eJIP_NetFreeNode(psJIP_Context, psNode);
-}
+//	tsNode *psNode = NULL;
+//	tsNetwork *psNet = &psJIP_Context->sNetwork;
+//	tsJIPAddress   sAddress;
+//	//teJIP_Status eStatus = E_JIP_ERROR_FAILED;
+//
+//	memset (&sAddress, 0, sizeof(struct sockaddr_in6));
+//	sAddress.sin6_family  = AF_INET6;
+//	sAddress.sin6_port    = htons(JIP_DEFAULT_PORT);
+//	memcpy(&sAddress.sin6_addr.s6_addr[0],addr,sizeof(struct in6_addr));
+//
+//	psNode = psJIP_LookupNode(psJIP_Context,&sAddress);
+//	if (psNode)
+//	{
+////		/* Got pointer to the node, lock the linked list now so that we can remove it. */
+////		eJIP_Lock(psJIP_Context);
+////		(void)psJIP_NodeListRemove(&psJIP_Context->sNetwork.psNodes, psNode);
+////
+////		/* Decrement count of nodes */
+////		psNet->u32NumNodes--;
+////		//eStatus = E_JIP_OK;
+////		eJIP_Unlock(psJIP_Context);
+//	}
+//	else
+//	{
+//		DBG_Printf(DBG_JIP, "Failed to remove node\n");
+//		return E_JIP_ERROR_FAILED;
+//	}
+//
+//	/* Node found to remove from the network */
+//	DBG_Printf_IPv6Address(DBG_JIP, psNode->sNode_Address.sin6_addr);
+//	CbJipNetworkChange(E_JIP_NODE_MOVE,psNode);
+//
+//    /* Now we can free the node */
+// //   return eJIP_NetFreeNode(psJIP_Context, psNode);
+//}
 
 
 
