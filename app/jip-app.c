@@ -22,6 +22,7 @@ extern tsJIP_Context sJIP_Context;
 /** Port to conenct to */
 extern int iPort;
 
+static int tag=0;
 /* Connection details */
 char *pcBorderRouterIPv6Address = "::0";
 char *pcGatewayIPv4Address = "0.0.0.0";
@@ -90,8 +91,10 @@ int AxMsg_JIP(struct in6_addr* addr,const char* cmd,const char* value)
 
 		if(strcmp(cmd,"light") == 0)
 		{
+			tag =1;
 			JipSet(ipv6_addr,"BulbControl","Mode",value);
 			printf("set light: %s\n", value);
+
 		}
 
 		if(strcmp(cmd,"lum") == 0)
@@ -341,13 +344,30 @@ int JipReset()
 		return -1;
 	}
 
+    tsNode *psNode;
     eJIPService_DiscoverNetwork(&sJIP_Context);
+    psNode =sJIP_Context.sNetwork.psNodes;
+    eJIP_Lock(&sJIP_Context);
+	while (psNode)
+	{
+		printf("u32DeviceId %d\n",psNode->u32DeviceId);
+		if (psNode->u32DeviceId == 134479873)
+		{
+
+			JipNodeTrap(&sJIP_Context,psNode);
+		}
+		psNode = psNode->psNext;
+	}
+	 eJIP_Unlock(&sJIP_Context);
+
 
     if (eJIPService_MonitorNetwork(&sJIP_Context,CbJipNetworkChange) != E_JIP_OK)
 	{
 		printf("JIP eJIPService_MonitorNetwork failed\n\r");
 		return -1;
 	}
+
+
 
     return 0;
 }
@@ -403,7 +423,14 @@ int JipSet(char *addr,char *mib,char *var,char *value)
 
 static void cbBulbModeTrap(tsVar *psModeVar)
 {
-	printf("Mode Changed!\n");
+
+	printf("type %d!\n",psModeVar->eVarType);
+	printf("Mode Change to %d!\n",*(uint8_t *)psModeVar->pvData);
+
+	char data[128];
+	sprintf(data,"light %d",*((uint8_t *)psModeVar->pvData));
+
+	AxSetProperty(&(psModeVar->psOwnerMib->psOwnerNode->sNode_Address.sin6_addr),data);
 
 }
 
@@ -423,15 +450,25 @@ teJIP_Status JipNodeTrap(tsJIP_Context *psJIP_Context, tsNode *psNode)
 
             if (psVar)
             {
-                if (eJIP_TrapVar(psJIP_Context, psVar, u8TreeVersionTrapHandle, cbBulbModeTrap) == E_JIP_OK)
-                {
-                    DBG_Printf(DBG_JIP, "Trap registered\n");
+            	if(eJIP_GetVar(psJIP_Context, psVar) == E_JIP_OK){
 
-                }
+					if (eJIP_TrapVar(psJIP_Context, psVar, u8TreeVersionTrapHandle, cbBulbModeTrap) == E_JIP_OK)
+					{
+						DBG_Printf(DBG_JIP, "Trap registered\n");
+
+					}
+
+					AxLogin_JIP(&(psNode->sNode_Address.sin6_addr),2);
+            	}else{
+            		AxLogout_JIP(&(psNode->sNode_Address.sin6_addr));
+            	}
             }
         }
+
         eJIP_UnlockNode(psNode);
     }
 
 }
+
+
 

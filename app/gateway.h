@@ -35,7 +35,7 @@ int initGateway(void);
 
 int AxLogin_JIP(struct in6_addr* addr, uint8_t type);
 int AxLogout_JIP(struct in6_addr* addr);
-int AxSetProperty(struct in6_addr* addr, char* property, char* value);
+int AxSetProperty(struct in6_addr* addr, char* property);
 int AxDelete_JIP(struct in6_addr* addr);
 int AxMsg_JIP(struct in6_addr* addr,const char* cmd,const char* value);
 

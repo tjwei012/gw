@@ -249,7 +249,7 @@ int AxLogout_JIP(struct in6_addr* addr) {
 	return ArrayentChildLogout(child->index);
 }
 
-int AxSetProperty(struct in6_addr* addr, char* property, char* value){
+int AxSetProperty(struct in6_addr* addr, char* property){
 
 	ST_CHILD* child = findChildByAddr(addr, g_gateway.firstChild);
 
