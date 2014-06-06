@@ -12,8 +12,8 @@ int main(void) {
 
 
 	initGateway();
-//	printf("hello");
-	JipInit();
+
+	eBR_Init();
 
 	while(1){
 		usleep(1);

@@ -89,7 +89,7 @@ void* readProperty(void* arg) {
 
 		len = sizeof(buffer);
 
-		if ((ret = ArrayentRecvProperty(&userIndex, buffer, &len, UINT32_MAX))
+		if ((ret = ArrayentRecvProperty(&userIndex, buffer, &len, 0))
 				!= ARRAYENT_SUCCESS) {
 			printf("Failed to read message from Arrayent with error %d\r\n",
 					ret);
